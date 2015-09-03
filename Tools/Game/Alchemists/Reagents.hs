@@ -1,7 +1,7 @@
 module Tools.Game.Alchemists.Reagents (
   Potion(..),
   Alchemical(..),
-  Ingredient,
+  Ingredient(..),
   PerIngredient,
   AlchemicalAssignment,
   AlchemicalConstraint,
