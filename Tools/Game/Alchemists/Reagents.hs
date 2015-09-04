@@ -4,6 +4,7 @@ module Tools.Game.Alchemists.Reagents (
   Potion(..),
   Alchemical(..),
   Ingredient(..),
+  Sign(..),
   PerIngredient,
   PerAlchemical,
   AlchemicalAssignment,
@@ -14,7 +15,8 @@ module Tools.Game.Alchemists.Reagents (
   allAssignments,
   createsPotion,
   alchemicalProbs,
-  potionProb
+  potionProb,
+  signProb
 ) where
 
 import qualified Tools.Game.Alchemists.PerEnum as PE
@@ -26,7 +28,7 @@ data Potion = BLUE_PLUS | BLUE_MINUS | RED_PLUS | RED_MINUS | GREEN_PLUS | GREEN
 
 data Color = BLUE | RED | GREEN deriving (Show)
 
-data Sign = PLUS | MINUS deriving (Show)
+data Sign = PLUS | MINUS | NO_SIGN deriving (Show, Eq)
 
 data Alchemical = AL_1 | AL_2 | AL_3 | AL_4 | AL_5 | AL_6 | AL_7 | AL_8 deriving (Show, Eq, Enum, Bounded)
 
@@ -47,6 +49,7 @@ potionSign RED_PLUS = PLUS
 potionSign RED_MINUS = MINUS
 potionSign GREEN_PLUS = PLUS
 potionSign GREEN_MINUS = MINUS
+potionSign NEUTRAL = NO_SIGN
 
 alchemicalProduct :: Alchemical -> Alchemical -> Potion
 alchemicalProduct AL_1 AL_2 = NEUTRAL
@@ -149,7 +152,13 @@ alchemicalProbs i assignments = foldr inc (PE.init (0%1)) assignments
   where inc = PE.update (+ 1%len) . PE.get i
         len = fromIntegral $ length assignments
 
-potionProb :: Potion -> Ingredient -> Ingredient -> [AlchemicalAssignment] -> R.Rational
-potionProb potion i1 i2 assignments = foldr inc (0%1) assignments / fromIntegral (length assignments)
-  where inc assignment count | potion == ingredientProduct i1 i2 assignment = count + (1%1)
+productProb :: (Potion -> Bool) -> Ingredient -> Ingredient -> [AlchemicalAssignment] -> R.Rational
+productProb f i1 i2 assignments = foldr inc (0%1) assignments / fromIntegral (length assignments)
+  where inc assignment count | f $ ingredientProduct i1 i2 assignment = count + (1%1)
                              | otherwise = count
+
+potionProb :: Potion -> Ingredient -> Ingredient -> [AlchemicalAssignment] -> R.Rational
+potionProb potion = productProb (== potion)
+
+signProb :: Sign -> Ingredient -> Ingredient -> [AlchemicalAssignment] -> R.Rational
+signProb sign = productProb ((==) sign . potionSign)

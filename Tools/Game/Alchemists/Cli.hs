@@ -1,6 +1,7 @@
 module Tools.Game.Alchemists.Cli (
   printAlchemicalProbs,
-  printPotionProbs
+  printPotionProbs,
+  printSignProbs
 ) where
 
 import Tools.Game.Alchemists.Reagents
@@ -18,11 +19,19 @@ printAlchemicalProbs :: [AlchemicalAssignment] -> IO ()
 printAlchemicalProbs a = printPETable formatPercent probs
   where probs = PE.build $ flip alchemicalProbs a :: PerIngredient (PerAlchemical R.Rational)
 
+printIxIProbTable :: (Ingredient -> Ingredient -> R.Rational) -> IO ()
+printIxIProbTable f = printPETable formatPercent table
+  where table = PET.build f :: PerIngredient (PerIngredient R.Rational)
+
 printPotionProbs :: Potion -> [AlchemicalAssignment] -> IO ()
-printPotionProbs potion assignments = printPETable formatPercent table
-  where table = PET.build cellValue :: PerIngredient (PerIngredient R.Rational)
-        cellValue i1 i2 | i1 == i2 = 0%1
+printPotionProbs potion assignments = printIxIProbTable cellValue
+  where cellValue i1 i2 | i1 == i2 = 0%1
                         | otherwise = potionProb potion i1 i2 assignments
+
+printSignProbs :: Sign -> [AlchemicalAssignment] -> IO ()
+printSignProbs sign assignments = printIxIProbTable cellValue
+  where cellValue i1 i2 | i1 == i2 = 0%1
+                        | otherwise = signProb sign i1 i2 assignments
 
 printTable :: (Show r, Show c) => (r -> c -> String) -> [r] -> [c] -> IO ()
 printTable cellValue rows cols = do
