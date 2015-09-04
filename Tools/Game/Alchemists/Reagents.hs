@@ -13,7 +13,8 @@ module Tools.Game.Alchemists.Reagents (
   alchemicalProduct,
   allAssignments,
   createsPotion,
-  alchemicalProbs
+  alchemicalProbs,
+  potionProb
 ) where
 
 import qualified Tools.Game.Alchemists.PerEnum as PE
@@ -147,3 +148,8 @@ alchemicalProbs :: Ingredient -> [AlchemicalAssignment] -> PerAlchemical R.Ratio
 alchemicalProbs i assignments = foldr inc (PE.init (0%1)) assignments
   where inc = PE.update (+ 1%len) . PE.get i
         len = fromIntegral $ length assignments
+
+potionProb :: Potion -> Ingredient -> Ingredient -> [AlchemicalAssignment] -> R.Rational
+potionProb potion i1 i2 assignments = foldr inc (0%1) assignments / fromIntegral (length assignments)
+  where inc assignment count | potion == ingredientProduct i1 i2 assignment = count + (1%1)
+                             | otherwise = count
