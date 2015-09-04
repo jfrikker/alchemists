@@ -12,7 +12,7 @@ module Tools.Game.Alchemists.Reagents (
   alchemicalProduct,
   allAssignments,
   createsPotion,
-  reagentProbs
+  alchemicalProbs
 ) where
 
 import qualified Tools.Game.Alchemists.PerEnum as PE
@@ -142,8 +142,7 @@ assignmentFromList [al1, al2, al3, al4, al5, al6, al7, al8] = PI al1 al2 al3 al4
 createsPotion :: Ingredient -> Ingredient -> Potion -> AlchemicalConstraint
 createsPotion i1 i2 potion assignment = potion == ingredientProduct i1 i2 assignment
 
-reagentProbs :: [AlchemicalAssignment] -> PerIngredient (PerAlchemical R.Rational)
-reagentProbs assignments = foldr inc (PE.build $ const $ PE.build $ const (0%1)) assignments
-  where inc = PE.combine comb
-        comb = PE.update (+ 1%len)
+alchemicalProbs :: Ingredient -> [AlchemicalAssignment] -> PerAlchemical R.Rational
+alchemicalProbs i assignments = foldr inc (PE.init (0%1)) assignments
+  where inc = PE.update (+ 1%len) . PE.get i
         len = fromIntegral $ length assignments

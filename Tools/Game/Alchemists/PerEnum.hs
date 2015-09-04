@@ -6,9 +6,12 @@ module Tools.Game.Alchemists.PerEnum (
   set,
   new,
   build,
+  init,
   combine,
   update
 ) where
+
+import Prelude hiding (init)
 
 class (Bounded e, Enum e) => PerEnum p e | p -> e where
   get :: e -> p a -> a
@@ -17,6 +20,9 @@ class (Bounded e, Enum e) => PerEnum p e | p -> e where
 
   build :: (e -> a) -> p a
   build f = foldr (\e p -> set e (f e) p) new [minBound .. maxBound]
+
+  init :: a -> p a
+  init = build . const
 
   combine :: (a -> b -> c) -> p a -> p b -> p c
   combine f a b = build comb
