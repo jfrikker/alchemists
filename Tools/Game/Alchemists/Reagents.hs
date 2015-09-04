@@ -5,6 +5,7 @@ module Tools.Game.Alchemists.Reagents (
   Alchemical(..),
   Ingredient(..),
   PerIngredient,
+  PerAlchemical,
   AlchemicalAssignment,
   AlchemicalConstraint,
   potionColor,

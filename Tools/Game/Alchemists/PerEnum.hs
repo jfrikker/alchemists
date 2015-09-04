@@ -1,14 +1,9 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies #-}
 
 module Tools.Game.Alchemists.PerEnum (
-  PerEnum,
-  get,
-  set,
-  new,
-  build,
-  init,
-  combine,
-  update
+  PerEnum(..),
+  update,
+  keys
 ) where
 
 import Prelude hiding (init)
@@ -28,5 +23,8 @@ class (Bounded e, Enum e) => PerEnum p e | p -> e where
   combine f a b = build comb
     where comb e = f (get e a) (get e b)
 
-  update :: (a -> a) -> e -> p a -> p a
-  update f e p = set e (f (get e p)) p
+update :: (PerEnum p e) => (a -> a) -> e -> p a -> p a
+update f e p = set e (f (get e p)) p
+
+keys :: (PerEnum p e) => p a -> [e]
+keys _ = [minBound .. maxBound]
