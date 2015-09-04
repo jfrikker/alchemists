@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+
 module Tools.Game.Alchemists.Reagents (
   Potion(..),
   Alchemical(..),
@@ -8,12 +10,15 @@ module Tools.Game.Alchemists.Reagents (
   potionColor,
   potionSign,
   alchemicalProduct,
-  forAssignment,
   allAssignments,
-  createsPotion
+  createsPotion,
+  reagentProbs
 ) where
 
+import qualified Tools.Game.Alchemists.PerEnum as PE
 import qualified Data.List as L
+import qualified Data.Ratio as R
+import Data.Ratio ((%))
 
 data Potion = BLUE_PLUS | BLUE_MINUS | RED_PLUS | RED_MINUS | GREEN_PLUS | GREEN_MINUS | NEUTRAL deriving (Show, Eq)
 
@@ -21,15 +26,9 @@ data Color = BLUE | RED | GREEN deriving (Show)
 
 data Sign = PLUS | MINUS deriving (Show)
 
-data Alchemical = AL_1 | AL_2 | AL_3 | AL_4 | AL_5 | AL_6 | AL_7 | AL_8 deriving (Show, Eq, Enum)
+data Alchemical = AL_1 | AL_2 | AL_3 | AL_4 | AL_5 | AL_6 | AL_7 | AL_8 deriving (Show, Eq, Enum, Bounded)
 
-data Ingredient = MUSHROOM | SPROUT | TOAD | FOOT | FLOWER | ROOT | SCORPION | FEATHER deriving (Show, Eq)
-
-type PerIngredient a = (a, a, a, a, a, a, a, a)
-
-type AlchemicalAssignment = PerIngredient Alchemical
-
-type AlchemicalConstraint = AlchemicalAssignment -> Bool
+data Ingredient = MUSHROOM | SPROUT | TOAD | FOOT | FLOWER | ROOT | SCORPION | FEATHER deriving (Show, Eq, Enum, Bounded)
 
 potionColor :: Potion -> Color
 potionColor BLUE_PLUS = BLUE
@@ -79,34 +78,72 @@ alchemicalProduct AL_7 AL_8 = NEUTRAL
 alchemicalProduct x y | x == y = error "Can't combine an alchemical with itself."
                       | otherwise = alchemicalProduct y x
 
-forAssignment :: Ingredient -> PerIngredient a -> a
-forAssignment MUSHROOM (x, _, _, _, _, _, _, _) = x
-forAssignment SPROUT (_, x, _, _, _, _, _, _) = x
-forAssignment TOAD (_, _, x, _, _, _, _, _) = x
-forAssignment FOOT (_, _, _, x, _, _, _, _) = x
-forAssignment FLOWER (_, _, _, _, x, _, _, _) = x
-forAssignment ROOT (_, _, _, _, _, x, _, _) = x
-forAssignment SCORPION (_, _, _, _, _, _, x, _) = x
-forAssignment FEATHER (_, _, _, _, _, _, _, x) = x
+data PerIngredient a = PI a a a a a a a a deriving (Show)
 
-setForAssignment :: Ingredient -> a -> PerIngredient a -> PerIngredient a
-setForAssignment MUSHROOM val (_, b, c, d, e, f, g, h) = (val, b, c, d, e, f, g, h)
-setForAssignment SPROUT val (a, _, c, d, e, f, g, h) = (a, val, c, d, e, f, g, h)
-setForAssignment TOAD val (a, b, _, d, e, f, g, h) = (a, b, val, d, e, f, g, h)
-setForAssignment FOOT val (a, b, c, _, e, f, g, h) = (a, b, c, val, e, f, g, h)
-setForAssignment FLOWER val (a, b, c, d, _, f, g, h) = (a, b, c, d, val, f, g, h)
-setForAssignment ROOT val (a, b, c, d, e, _, g, h) = (a, b, c, d, e, val, g, h)
-setForAssignment SCORPION val (a, b, c, d, e, f, _, h) = (a, b, c, d, e, f, val, h)
-setForAssignment FEATHER val (a, b, c, d, e, f, g, _) = (a, b, c, d, e, f, g, val)
+instance PE.PerEnum PerIngredient Ingredient where
+  get MUSHROOM (PI x _ _ _ _ _ _ _) = x
+  get SPROUT (PI _ x _ _ _ _ _ _) = x
+  get TOAD (PI _ _ x _ _ _ _ _) = x
+  get FOOT (PI _ _ _ x _ _ _ _) = x
+  get FLOWER (PI _ _ _ _ x _ _ _) = x
+  get ROOT (PI _ _ _ _ _ x _ _) = x
+  get SCORPION (PI _ _ _ _ _ _ x _) = x
+  get FEATHER (PI _ _ _ _ _ _ _ x) = x
+
+  set MUSHROOM val (PI _ b c d e f g h) = PI val b c d e f g h
+  set SPROUT val (PI a _ c d e f g h) = PI a val c d e f g h
+  set TOAD val (PI a b _ d e f g h) = PI a b val d e f g h
+  set FOOT val (PI a b c _ e f g h) = PI a b c val e f g h
+  set FLOWER val (PI a b c d _ f g h) = PI a b c d val f g h
+  set ROOT val (PI a b c d e _ g h) = PI a b c d e val g h
+  set SCORPION val (PI a b c d e f _ h) = PI a b c d e f val h
+  set FEATHER val (PI a b c d e f g _) = PI a b c d e f g val
+
+  new = PI u u u u u u u u
+    where u = undefined
+
+type AlchemicalAssignment = PerIngredient Alchemical
+
+data PerAlchemical a = PA a a a a a a a a deriving (Show)
+
+instance PE.PerEnum PerAlchemical Alchemical where
+  get AL_1 (PA x _ _ _ _ _ _ _) = x
+  get AL_2 (PA _ x _ _ _ _ _ _) = x
+  get AL_3 (PA _ _ x _ _ _ _ _) = x
+  get AL_4 (PA _ _ _ x _ _ _ _) = x
+  get AL_5 (PA _ _ _ _ x _ _ _) = x
+  get AL_6 (PA _ _ _ _ _ x _ _) = x
+  get AL_7 (PA _ _ _ _ _ _ x _) = x
+  get AL_8 (PA _ _ _ _ _ _ _ x) = x
+
+  set AL_1 val (PA _ b c d e f g h) = PA val b c d e f g h
+  set AL_2 val (PA a _ c d e f g h) = PA a val c d e f g h
+  set AL_3 val (PA a b _ d e f g h) = PA a b val d e f g h
+  set AL_4 val (PA a b c _ e f g h) = PA a b c val e f g h
+  set AL_5 val (PA a b c d _ f g h) = PA a b c d val f g h
+  set AL_6 val (PA a b c d e _ g h) = PA a b c d e val g h
+  set AL_7 val (PA a b c d e f _ h) = PA a b c d e f val h
+  set AL_8 val (PA a b c d e f g _) = PA a b c d e f g val
+
+  new = PA u u u u u u u u
+    where u = undefined
+
+type AlchemicalConstraint = AlchemicalAssignment -> Bool
 
 ingredientProduct :: Ingredient -> Ingredient -> AlchemicalAssignment -> Potion
-ingredientProduct i1 i2 assignment = alchemicalProduct (forAssignment i1 assignment) (forAssignment i2 assignment)
+ingredientProduct i1 i2 assignment = alchemicalProduct (PE.get i1 assignment) (PE.get i2 assignment)
 
 allAssignments :: [AlchemicalAssignment]
 allAssignments = map assignmentFromList $ L.permutations [AL_1 .. AL_8]
 
 assignmentFromList :: [Alchemical] -> AlchemicalAssignment
-assignmentFromList [al1, al2, al3, al4, al5, al6, al7, al8] = (al1, al2, al3, al4, al5, al6, al7, al8)
+assignmentFromList [al1, al2, al3, al4, al5, al6, al7, al8] = PI al1 al2 al3 al4 al5 al6 al7 al8
 
 createsPotion :: Ingredient -> Ingredient -> Potion -> AlchemicalConstraint
 createsPotion i1 i2 potion assignment = potion == ingredientProduct i1 i2 assignment
+
+reagentProbs :: [AlchemicalAssignment] -> PerIngredient (PerAlchemical R.Rational)
+reagentProbs assignments = foldr inc (PE.build $ const $ PE.build $ const (0%1)) assignments
+  where inc = PE.combine comb
+        comb = PE.update (+ 1%len)
+        len = fromIntegral $ length assignments
