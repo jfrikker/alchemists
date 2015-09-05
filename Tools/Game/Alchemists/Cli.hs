@@ -16,11 +16,11 @@ formatPercent :: R.Rational -> String
 formatPercent r = printf "%5.1f%%" (100 * (realToFrac r :: Double))
 
 printAlchemicalProbs :: [AlchemicalAssignment] -> IO ()
-printAlchemicalProbs a = printPETable formatPercent probs
+printAlchemicalProbs a = printPETable $ PET.tmap formatPercent probs
   where probs = PE.build $ flip alchemicalProbs a :: PerIngredient (PerAlchemical R.Rational)
 
 printIxIProbTable :: (Ingredient -> Ingredient -> R.Rational) -> IO ()
-printIxIProbTable f = printPETable formatPercent table
+printIxIProbTable f = printPETable $ PET.tmap formatPercent table
   where table = PET.build f :: PerIngredient (PerIngredient R.Rational)
 
 printPotionProbs :: Potion -> [AlchemicalAssignment] -> IO ()
@@ -40,6 +40,9 @@ printTable cellValue rows cols = do
   Box.printBox $ Box.hsep 1 Box.left $ left : dataCols
   where layoutCol col = Box.vcat Box.right $ Box.text (show col) : map (Box.text . (`cellValue` col)) rows
 
-printPETable :: (PE.PerEnum p1 c, PE.PerEnum p2 r, Show c, Show r) => (a -> String) -> p1 (p2 a) -> IO ()
-printPETable formatCell table = printTable cellValue (PET.rowKeys table) (PET.colKeys table)
-  where cellValue r c = formatCell $ PET.get c r table
+printEnumTable :: (Show r, Bounded r, Enum r, Show c, Bounded c, Enum c) => (r -> c -> String) -> IO ()
+printEnumTable f = printTable f [minBound .. maxBound] [minBound .. maxBound]
+
+printPETable :: (PE.PerEnum p1 c, PE.PerEnum p2 r, Show c, Show r) => p1 (p2 String) -> IO ()
+printPETable table = printEnumTable cellValue
+  where cellValue r c = PET.get c r table

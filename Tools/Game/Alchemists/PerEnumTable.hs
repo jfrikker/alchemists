@@ -3,7 +3,8 @@ module Tools.Game.Alchemists.PerEnumTable (
   init,
   get,
   rowKeys,
-  colKeys
+  colKeys,
+  tmap
 ) where
 
 import Prelude hiding (init)
@@ -23,3 +24,6 @@ rowKeys _ = [minBound .. maxBound]
 
 colKeys :: (PE.PerEnum p1 c, PE.PerEnum p2 r) => p1 (p2 a) -> [c]
 colKeys _ = [minBound .. maxBound]
+
+tmap :: (PE.PerEnum p1 c, PE.PerEnum p2 r, Functor p1, Functor p2) => (a -> b) -> p1 (p2 a) -> p1 (p2 b)
+tmap f = fmap (fmap f)

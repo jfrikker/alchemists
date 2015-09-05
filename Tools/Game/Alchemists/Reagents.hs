@@ -85,6 +85,9 @@ alchemicalProduct x y | x == y = error "Can't combine an alchemical with itself.
 
 data PerIngredient a = PI a a a a a a a a deriving (Show)
 
+instance Functor PerIngredient where
+  fmap f (PI a b c d e f' g h) = PI (f a) (f b) (f c) (f d) (f e) (f f') (f g) (f h)
+
 instance PE.PerEnum PerIngredient Ingredient where
   get MUSHROOM (PI x _ _ _ _ _ _ _) = x
   get SPROUT (PI _ x _ _ _ _ _ _) = x
@@ -110,6 +113,9 @@ instance PE.PerEnum PerIngredient Ingredient where
 type AlchemicalAssignment = PerIngredient Alchemical
 
 data PerAlchemical a = PA a a a a a a a a deriving (Show)
+
+instance Functor PerAlchemical where
+  fmap f (PA a b c d e f' g h) = PA (f a) (f b) (f c) (f d) (f e) (f f') (f g) (f h)
 
 instance PE.PerEnum PerAlchemical Alchemical where
   get AL_1 (PA x _ _ _ _ _ _ _) = x
