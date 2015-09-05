@@ -6,15 +6,18 @@
   >>> let a1 = filter (createsPotion TOAD FLOWER BLUE_PLUS) allAssignments
   >>> let a2 = filter (createsPotion MUSHROOM FOOT RED_MINUS) a1
   >>> printAlchemicalProbs a2
-            MUSHROOM SPROUT   TOAD   FOOT FLOWER   ROOT SCORPION FEATHER
-       AL_1    37.5%   6.2%   0.0%  37.5%   0.0%   6.2%     6.2%    6.2%
-       AL_2     0.0%  12.5%  25.0%   0.0%  25.0%  12.5%    12.5%   12.5%
-       AL_3     0.0%  25.0%   0.0%   0.0%   0.0%  25.0%    25.0%   25.0%
-       AL_4    12.5%   6.2%  25.0%  12.5%  25.0%   6.2%     6.2%    6.2%
-       AL_5    12.5%   6.2%  25.0%  12.5%  25.0%   6.2%     6.2%    6.2%
-       AL_6     0.0%  25.0%   0.0%   0.0%   0.0%  25.0%    25.0%   25.0%
-       AL_7    37.5%   6.2%   0.0%  37.5%   0.0%   6.2%     6.2%    6.2%
-       AL_8     0.0%  12.5%  25.0%   0.0%  25.0%  12.5%    12.5%   12.5%
+       MUSHROOM SPROUT   TOAD   FOOT FLOWER   ROOT SCORPION FEATHER
+  AL_1    37.5%   6.2%         37.5%          6.2%     6.2%    6.2%
+  AL_2           12.5%  25.0%         25.0%  12.5%    12.5%   12.5%
+  AL_3           25.0%                       25.0%    25.0%   25.0%
+  AL_4    12.5%   6.2%  25.0%  12.5%  25.0%   6.2%     6.2%    6.2%
+  AL_5    12.5%   6.2%  25.0%  12.5%  25.0%   6.2%     6.2%    6.2%
+  AL_6           25.0%                       25.0%    25.0%   25.0%
+  AL_7    37.5%   6.2%         37.5%          6.2%     6.2%    6.2%
+  AL_8           12.5%  25.0%         25.0%  12.5%    12.5%   12.5%
+
+  All of the functions that print tables of probabilities (like the one shown above) omit cells whose probability is 0
+  to avoid clutter.
 -}
 module Tools.Game.Alchemists.Cli (
   printAlchemicalProbs,
@@ -37,7 +40,7 @@ formatPercent r | r == (0%1) = ""
 -- |Prints the odds that each ingredient is assigned to each alchemical. The format is a table organized just like the
 -- deduction grid provided with the game.
 --
---  >>> printAlchemicalProbs a2
+-- >>> printAlchemicalProbs a2
 --      MUSHROOM SPROUT   TOAD   FOOT FLOWER   ROOT SCORPION FEATHER
 -- AL_1    37.5%   6.2%         37.5%          6.2%     6.2%    6.2%
 -- AL_2           12.5%  25.0%         25.0%  12.5%    12.5%   12.5%

@@ -25,6 +25,7 @@ module Tools.Game.Alchemists.Reagents (
   -- * Basic facts
   potionColor,
   potionSign,
+  oppositeSign,
   alchemicalProduct,
 
   -- * Ingredient / Alchemical assignments
@@ -36,6 +37,7 @@ module Tools.Game.Alchemists.Reagents (
   -- * Filtering assignments
   AlchemicalConstraint,
   createsPotion,
+  salesResult,
 
   -- * Extracting facts from potential assignments
   alchemicalProbs,
@@ -48,7 +50,7 @@ import qualified Data.List as L
 import qualified Data.Ratio as R
 import Data.Ratio ((%))
 
--- |The 7 potion types.
+-- |The 7 potions.
 data Potion = BLUE_PLUS | BLUE_MINUS | RED_PLUS | RED_MINUS | GREEN_PLUS | GREEN_MINUS | NEUTRAL deriving (Show, Eq)
 
 -- |The 3 potion colors.
@@ -57,11 +59,11 @@ data Color = BLUE | RED | GREEN deriving (Show)
 -- |The 3 potion signs. All potion types have a sign, except for the NEUTRAL potion, which has NO_SIGN.
 data Sign = PLUS | MINUS | NO_SIGN deriving (Show, Eq)
 
--- |The 8 alchemical types. The alchemical types are difficult to name. They follow the order shown on the deduction grid,
+-- |The 8 alchemicals. The alchemical types are difficult to name. They follow the order shown on the deduction grid,
 -- top to bottom.
 data Alchemical = AL_1 | AL_2 | AL_3 | AL_4 | AL_5 | AL_6 | AL_7 | AL_8 deriving (Show, Eq, Enum, Bounded)
 
--- |The 8 ingredient types.
+-- |The 8 ingredients.
 data Ingredient = MUSHROOM | SPROUT | TOAD | FOOT | FLOWER | ROOT | SCORPION | FEATHER deriving (Show, Eq, Enum, Bounded)
 
 -- |A potion's color.
@@ -82,6 +84,12 @@ potionSign RED_MINUS = MINUS
 potionSign GREEN_PLUS = PLUS
 potionSign GREEN_MINUS = MINUS
 potionSign NEUTRAL = NO_SIGN
+
+-- |The inverse of a sign (so a PLUS becomes a MINUS, NO_SIGN remains NO_SIGN).
+oppositeSign :: Sign -> Sign
+oppositeSign PLUS = MINUS
+oppositeSign MINUS = PLUS
+oppositeSign NO_SIGN = NO_SIGN
 
 -- |The potion produced by the combination of two alchemicals. Combining an alchemical with itself is not possible.
 alchemicalProduct :: Alchemical -> Alchemical -> Potion
@@ -195,6 +203,24 @@ assignmentFromList [al1, al2, al3, al4, al5, al6, al7, al8] = PI al1 al2 al3 al4
 -- just mixed a new potion.
 createsPotion :: Ingredient -> Ingredient -> Potion -> AlchemicalConstraint
 createsPotion i1 i2 potion assignment = potion == ingredientProduct i1 i2 assignment
+
+-- |A constraint indicating that an attempt at a potion sale had a certain result. The result (the Int parameter) is
+-- represented by the base payment amount of the outcome.
+--
+-- Of course,
+--
+-- > salesResult i1 i2 potion 4 assignment == createsPotion i1 i2 potion assignment
+--
+-- and
+--
+-- > salesResult i1 i2 potion 2 assignment == createsPotion i1 i2 NEUTRAL assignment
+salesResult :: Ingredient -> Ingredient -> Potion -> Int -> AlchemicalConstraint
+salesResult i1 i2 potion result assignment = case result of
+  4 -> potion == product
+  3 -> potion /= product && potionSign potion == potionSign product
+  2 -> product == NEUTRAL
+  1 -> (oppositeSign $ potionSign potion) == potionSign product
+  where product = ingredientProduct i1 i2 assignment
 
 -- |Given an ingredient and a list of potential assignments, computes the odds that that ingredient is assigned to
 -- each alchemical. This function takes an ingredient, rather than an ingredient and an alchemical, for efficiency.
