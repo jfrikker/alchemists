@@ -1,19 +1,43 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
+{-|
+Module: Tools.Game.Alchemists.Reagents
+
+Everything related to the deduction grid. This module basically has 4 types of things:
+
+  1. Data types representing alchemicals, ingredients, potions, etc.
+  
+  2. Facts about those types. For example, the color of a potion, or the potion created by combining two alchemicals.
+  
+  3. The set of all possible (Ingredient, Alchemical) assignments, and tools for filtering them based on the game state.
+  
+  4. Tools for extracting useful information from the set of states arrived at in step (3).
+-}
+
 module Tools.Game.Alchemists.Reagents (
-  Potion(..),
+  -- * Datatypes
   Alchemical(..),
   Ingredient(..),
+  Potion(..),
+  Color(..),
   Sign(..),
-  PerIngredient,
-  PerAlchemical,
-  AlchemicalAssignment,
-  AlchemicalConstraint,
+
+  -- * Basic facts
   potionColor,
   potionSign,
   alchemicalProduct,
+
+  -- * Ingredient / Alchemical assignments
+  PerIngredient,
+  PerAlchemical,
+  AlchemicalAssignment,
   allAssignments,
+
+  -- * Filtering assignments
+  AlchemicalConstraint,
   createsPotion,
+
+  -- * Extracting facts from potential assignments
   alchemicalProbs,
   potionProb,
   signProb
@@ -24,16 +48,23 @@ import qualified Data.List as L
 import qualified Data.Ratio as R
 import Data.Ratio ((%))
 
+-- |The 7 potion types.
 data Potion = BLUE_PLUS | BLUE_MINUS | RED_PLUS | RED_MINUS | GREEN_PLUS | GREEN_MINUS | NEUTRAL deriving (Show, Eq)
 
+-- |The 3 potion colors.
 data Color = BLUE | RED | GREEN deriving (Show)
 
+-- |The 3 potion signs. All potion types have a sign, except for the NEUTRAL potion, which has NO_SIGN.
 data Sign = PLUS | MINUS | NO_SIGN deriving (Show, Eq)
 
+-- |The 8 alchemical types. The alchemical types are difficult to name. They follow the order shown on the deduction grid,
+-- top to bottom.
 data Alchemical = AL_1 | AL_2 | AL_3 | AL_4 | AL_5 | AL_6 | AL_7 | AL_8 deriving (Show, Eq, Enum, Bounded)
 
+-- |The 8 ingredient types.
 data Ingredient = MUSHROOM | SPROUT | TOAD | FOOT | FLOWER | ROOT | SCORPION | FEATHER deriving (Show, Eq, Enum, Bounded)
 
+-- |A potion's color.
 potionColor :: Potion -> Color
 potionColor BLUE_PLUS = BLUE
 potionColor BLUE_MINUS = BLUE
@@ -42,6 +73,7 @@ potionColor RED_MINUS = RED
 potionColor GREEN_PLUS = GREEN
 potionColor GREEN_MINUS = GREEN
 
+-- |A potion's sign.
 potionSign :: Potion -> Sign
 potionSign BLUE_PLUS = PLUS
 potionSign BLUE_MINUS = MINUS
@@ -51,6 +83,7 @@ potionSign GREEN_PLUS = PLUS
 potionSign GREEN_MINUS = MINUS
 potionSign NEUTRAL = NO_SIGN
 
+-- |The potion produced by the combination of two alchemicals. Combining an alchemical with itself is not possible.
 alchemicalProduct :: Alchemical -> Alchemical -> Potion
 alchemicalProduct AL_1 AL_2 = NEUTRAL
 alchemicalProduct AL_1 AL_3 = BLUE_MINUS
@@ -83,6 +116,7 @@ alchemicalProduct AL_7 AL_8 = NEUTRAL
 alchemicalProduct x y | x == y = error "Can't combine an alchemical with itself."
                       | otherwise = alchemicalProduct y x
 
+-- |A data structure that can store a separate value for each of the 8 ingredients.
 data PerIngredient a = PI a a a a a a a a deriving (Show)
 
 instance Functor PerIngredient where
@@ -110,8 +144,10 @@ instance PE.PerEnum PerIngredient Ingredient where
   new = PI u u u u u u u u
     where u = undefined
 
+-- |The assignment of all 8 ingredients to specific alchemicals.
 type AlchemicalAssignment = PerIngredient Alchemical
 
+-- |A data structure that can store a separate value for each of the 8 alchemicals.
 data PerAlchemical a = PA a a a a a a a a deriving (Show)
 
 instance Functor PerAlchemical where
@@ -139,20 +175,29 @@ instance PE.PerEnum PerAlchemical Alchemical where
   new = PA u u u u u u u u
     where u = undefined
 
+-- |A constraint on the set of all alchemical assignments. This is normally used to filter the remaining set of 
+-- possible assignments. For example:
+--
+-- > filter (createsPotion FOOT MUSHROOM BLUE_PLUS) allAssignments
 type AlchemicalConstraint = AlchemicalAssignment -> Bool
 
 ingredientProduct :: Ingredient -> Ingredient -> AlchemicalAssignment -> Potion
 ingredientProduct i1 i2 assignment = alchemicalProduct (PE.get i1 assignment) (PE.get i2 assignment)
 
+-- |All possible ingredient / alchemical assignments. There are 40,320 such assignments.
 allAssignments :: [AlchemicalAssignment]
 allAssignments = map assignmentFromList $ L.permutations [AL_1 .. AL_8]
 
 assignmentFromList :: [Alchemical] -> AlchemicalAssignment
 assignmentFromList [al1, al2, al3, al4, al5, al6, al7, al8] = PI al1 al2 al3 al4 al5 al6 al7 al8
 
+-- |A constraint requiring that two specific ingredients mix to make a specific type of potion. Useful when you have
+-- just mixed a new potion.
 createsPotion :: Ingredient -> Ingredient -> Potion -> AlchemicalConstraint
 createsPotion i1 i2 potion assignment = potion == ingredientProduct i1 i2 assignment
 
+-- |Given an ingredient and a list of potential assignments, computes the odds that that ingredient is assigned to
+-- each alchemical. This function takes an ingredient, rather than an ingredient and an alchemical, for efficiency.
 alchemicalProbs :: Ingredient -> [AlchemicalAssignment] -> PerAlchemical R.Rational
 alchemicalProbs i assignments = foldr inc (PE.init (0%1)) assignments
   where inc = PE.update (+ 1%len) . PE.get i
@@ -163,8 +208,10 @@ productProb f i1 i2 assignments = foldr inc (0%1) assignments / fromIntegral (le
   where inc assignment count | f $ ingredientProduct i1 i2 assignment = count + (1%1)
                              | otherwise = count
 
+-- |Returns the odds that two specific ingredients will mix to form a certain potion.
 potionProb :: Potion -> Ingredient -> Ingredient -> [AlchemicalAssignment] -> R.Rational
 potionProb potion = productProb (== potion)
 
+-- |Returns the odds that two specific ingredients will mix to form a potion with a certain sign.
 signProb :: Sign -> Ingredient -> Ingredient -> [AlchemicalAssignment] -> R.Rational
 signProb sign = productProb ((==) sign . potionSign)

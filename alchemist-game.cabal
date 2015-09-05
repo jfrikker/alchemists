@@ -16,8 +16,8 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Tools.Game.Alchemists.Cli, Tools.Game.Alchemists.Reagents
-  other-modules:       Tools.Game.Alchemists.PerEnum
+  exposed-modules:     Tools.Game.Alchemists.Cli, Tools.Game.Alchemists.Reagents, Tools.Game.Alchemists.PerEnum, Tools.Game.Alchemists.PerEnumTable
+  other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.6, boxes
   -- hs-source-dirs:      
