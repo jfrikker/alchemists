@@ -26,6 +26,7 @@ module Tools.Game.Alchemists.Reagents (
   potionColor,
   potionSign,
   oppositeSign,
+  potentialAlchemicalProduct,
   alchemicalProduct,
 
   -- * Ingredient / Alchemical assignments
@@ -38,6 +39,7 @@ module Tools.Game.Alchemists.Reagents (
   AlchemicalConstraint,
   createsPotion,
   salesResult,
+  debunkResult,
 
   -- * Extracting facts from potential assignments
   alchemicalProbs,
@@ -90,6 +92,36 @@ oppositeSign :: Sign -> Sign
 oppositeSign PLUS = MINUS
 oppositeSign MINUS = PLUS
 oppositeSign NO_SIGN = NO_SIGN
+
+-- |The sign of each color for each alchemical.
+potentialAlchemicalProduct :: Alchemical -> Potion -> Bool
+potentialAlchemicalProduct AL_1 BLUE_PLUS = False
+potentialAlchemicalProduct AL_1 RED_PLUS = False
+potentialAlchemicalProduct AL_1 GREEN_PLUS = True
+potentialAlchemicalProduct AL_2 BLUE_PLUS = True
+potentialAlchemicalProduct AL_2 RED_PLUS = True
+potentialAlchemicalProduct AL_2 GREEN_PLUS = False
+potentialAlchemicalProduct AL_3 BLUE_PLUS = False
+potentialAlchemicalProduct AL_3 RED_PLUS = True
+potentialAlchemicalProduct AL_3 GREEN_PLUS = False
+potentialAlchemicalProduct AL_4 BLUE_PLUS = True
+potentialAlchemicalProduct AL_4 RED_PLUS = False
+potentialAlchemicalProduct AL_4 GREEN_PLUS = True
+potentialAlchemicalProduct AL_5 BLUE_PLUS = True
+potentialAlchemicalProduct AL_5 RED_PLUS = False
+potentialAlchemicalProduct AL_5 GREEN_PLUS = False
+potentialAlchemicalProduct AL_6 BLUE_PLUS = False
+potentialAlchemicalProduct AL_6 RED_PLUS = True
+potentialAlchemicalProduct AL_6 GREEN_PLUS = True
+potentialAlchemicalProduct AL_7 BLUE_PLUS = False
+potentialAlchemicalProduct AL_7 RED_PLUS = False
+potentialAlchemicalProduct AL_7 GREEN_PLUS = False
+potentialAlchemicalProduct AL_8 BLUE_PLUS = True
+potentialAlchemicalProduct AL_8 RED_PLUS = True
+potentialAlchemicalProduct AL_8 GREEN_PLUS = True
+potentialAlchemicalProduct a BLUE_MINUS = not $ potentialAlchemicalProduct a BLUE_PLUS
+potentialAlchemicalProduct a RED_MINUS = not $ potentialAlchemicalProduct a RED_PLUS
+potentialAlchemicalProduct a GREEN_MINUS = not $ potentialAlchemicalProduct a GREEN_PLUS
 
 -- |The potion produced by the combination of two alchemicals. Combining an alchemical with itself is not possible.
 alchemicalProduct :: Alchemical -> Alchemical -> Potion
@@ -221,6 +253,11 @@ salesResult i1 i2 potion result assignment = case result of
   2 -> product == NEUTRAL
   1 -> (oppositeSign $ potionSign potion) == potionSign product
   where product = ingredientProduct i1 i2 assignment
+
+-- |A constraint indicating that a certain ingredient can make a certain type of potion. This is normally discovered
+-- via a debunk attempt.
+debunkResult :: Ingredient -> Potion -> AlchemicalConstraint
+debunkResult i p a = potentialAlchemicalProduct (PE.get i a) p
 
 -- |Given an ingredient and a list of potential assignments, computes the odds that that ingredient is assigned to
 -- each alchemical. This function takes an ingredient, rather than an ingredient and an alchemical, for efficiency.
